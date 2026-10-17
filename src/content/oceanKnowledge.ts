@@ -7,6 +7,11 @@
  *
  * 边界：游戏里的脉冲、墙体遮挡与信号干扰都是玩法抽象，
  * 不是真实声场或声呐模型；节点也只是游戏目标，不代表已识别的物种或海域。
+ *
+ * 卡片编号（A~E）与来源对应《权威参考资料表》[1]~[4]：
+ * A/B/E -> [1] NOAA Fisheries，C -> [2] NOAA，D -> [3] IMO 主题页 + [4] IMO 2023 新闻（背景参考）。
+ * 其余三条官方来源（NOAA Fisheries 鱼类与无脊椎动物、NOAA 公众解释、NOAA Ocean Noise Strategy）
+ * 不在卡片里单独成卡，而是列在首页「资料来源」区，避免为了凑数把事实塞进关卡情境。
  */
 
 export interface OceanKnowledgeCard {
@@ -44,7 +49,7 @@ export const OCEAN_KNOWLEDGE_CARDS: Record<number, OceanKnowledgeCard> = {
   3: {
     id: 'how-scientists-record',
     title: '科学家如何记录水下声音',
-    body: '被动声学记录器可以由船只拖曳、搭载在水下机器人上，或放置在固定水下地点，连续记录一段时间的声景。游戏中的主动脉冲探索与真实的被动声学监测并不是同一方法。',
+    body: '被动声学记录器可以由船只拖曳、搭载在水下机器人上，或放置在固定水下地点，连续记录一段时间的声景。游戏中的主动脉冲探索与真实的被动声学监测并不是同一方法；这一关的墙体遮挡规则同样是游戏里的简化模型。',
     sourceName: 'NOAA Fisheries',
     sourceTitle: 'Environmental and Anthropogenic Ocean Sounds',
     sourceUrl:
@@ -59,13 +64,15 @@ export const OCEAN_KNOWLEDGE_CARDS: Record<number, OceanKnowledgeCard> = {
     sourceTitle: 'Marine Mammals: Underwater Noise',
     sourceUrl: 'https://www.noaa.gov/marine-mammals-underwater-noise'
   },
-  // id 5 → 卡片 D｜船舶也是水下声源之一
+  // id 5 → 卡片 D｜船舶也是水下声源之一（来源 [3] 主题页 + [4] 2023 新闻作背景参考）
   5: {
     id: 'ships-as-noise-source',
     title: '船舶也是水下声源之一',
     body: '国际海事组织指出，商业航运是水下辐射噪声的重要来源之一；这种噪声可能对多种海洋生物的重要生命活动产生不利影响。研究和降低噪声需要科学评估与行业协作。',
     sourceName: '国际海事组织（IMO）',
-    sourceTitle: 'Ship noise',
+    // 权威资料表提醒：指南的当前状态以主题页 [3] 为准，[4] 只作背景参考，
+    // 所以正文不写"已生效/已通过"，链接也只指向主题页。
+    sourceTitle: 'Ship noise（背景参考：Addressing underwater noise from ships, 2023）',
     sourceUrl: 'https://www.imo.org/en/mediacentre/hottopics/pages/noise.aspx'
   }
 };

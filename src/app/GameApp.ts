@@ -324,11 +324,11 @@ export class GameApp {
         this.hud.showToast('本区记录已完成，进入出口离开调查区');
         this.advanceTutorial('exitOpen');
       },
-      onBump: (reason) => {
+      onBump: () => {
         this.audio.playBump();
-        if (reason === 'exit') {
-          this.hud.showToast('出口尚未开启：先记录全部观测节点');
-        }
+      },
+      onExitLocked: () => {
+        this.hud.showToast('出口尚未开启：先记录全部观测节点');
       },
       onHurt: (health, maxHealth) => {
         this.audio.playHurt();

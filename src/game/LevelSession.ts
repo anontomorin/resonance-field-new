@@ -19,7 +19,10 @@ export interface SessionEvents {
   onResonatorActivated?: (activated: number, total: number) => void;
   onExitOpened?: () => void;
   onLevelCompleted?: () => void;
-  onBump?: (reason: 'wall' | 'exit') => void;
+  /** 撞上墙：无法进入 */
+  onBump?: (reason: 'wall') => void;
+  /** 走到尚未开启的出口格上：走得过去，但还不能离开调查区 */
+  onExitLocked?: () => void;
   onReveal?: (newTiles: number) => void;
   /** 踩中尖刺受伤 */
   onHurt?: (health: number, maxHealth: number) => void;
@@ -33,7 +36,8 @@ export interface SessionEvents {
  * 单局关卡会话：持有地图、玩家、节点、可见性与脉冲状态。
  *
  * 所有关卡规则都在这里判定：
- * - 移动：墙不可进入；出口只在所有必需节点激活后可进入；
+ * - 移动：墙不可进入；出口格本身走得上去（不再挡路），
+ *   只有**已开启**的出口才会在踩上去时结束本局；
  * - 脉冲：由 PulseSystem 按 BFS 到达时间逐个回调；
  * - 节点：脉冲抵达节点所在格时激活，且只激活一次；
  * - 通关：玩家进入已开启的出口格。
@@ -261,22 +265,23 @@ export class LevelSession {
       return false;
     }
 
-    if (this.map.kindAt(nx, ny) === 'exit' && !this.exitOpen) {
-      this.player.bump(dx, dy);
-      this.events.onBump?.('exit');
-      return false;
-    }
-
+    const kind = this.map.kindAt(nx, ny);
     this.player.moveTo(nx, ny);
     this.markPlayerTile();
     this.events.onMoved?.();
     this.checkTrap(nx, ny);
 
-    if (this.map.kindAt(nx, ny) === 'exit' && this.exitOpen) {
-      this.completed = true;
-      this.effects.burst(nx + 0.5, ny + 0.5, Theme.exitOpen, 26, 3.2);
-      this.effects.ripple(nx + 0.5, ny + 0.5, Theme.exitOpen, 5, 0.9);
-      this.events.onLevelCompleted?.();
+    // 出口格一律可以走上去：只有已开启的出口才结束本局，
+    // 未开启时踩上去只是"先来看看"，给一条提示而不是把人挡在门外。
+    if (kind === 'exit') {
+      if (this.exitOpen) {
+        this.completed = true;
+        this.effects.burst(nx + 0.5, ny + 0.5, Theme.exitOpen, 26, 3.2);
+        this.effects.ripple(nx + 0.5, ny + 0.5, Theme.exitOpen, 5, 0.9);
+        this.events.onLevelCompleted?.();
+      } else {
+        this.events.onExitLocked?.();
+      }
     }
     return true;
   }

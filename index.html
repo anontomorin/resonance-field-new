@@ -3,7 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>共振场：听见深海</title>
+    <meta
+      name="description"
+      content="《共振场：听见深海》——一次关于海洋声景的互动探索。以声波探索未知海域的纯前端网格解谜，通关附可追溯来源的海洋声景知识卡。"
+    />
+    <title>共振场：听见深海 · 一次关于海洋声景的互动探索</title>
   </head>
   <body>
     <div id="app">
@@ -95,6 +99,7 @@
               <div class="home-brand">
                 <div class="title-mark">DEEP SEA SOUNDSCAPE</div>
                 <h1 class="game-title">共振场：听见深海</h1>
+                <p class="game-subtitle">一次关于海洋声景的互动探索</p>
                 <p class="game-tagline">海洋并非无声。穿过未知与干扰，重新听见生命信号。</p>
               </div>
 
@@ -184,6 +189,88 @@
             <div class="archive-grid" id="archive-grid"></div>
           </section>
 
+          <!-- 资料来源：把知识卡背后的官方依据直接摆出来，作品里的每一条科学表述都能溯源。
+               纯静态外链，不参与任何游戏逻辑，也不进入手柄的线性焦点序列。
+               这里只链接官方页面，不下载或嵌入其音频 / 图片。 -->
+          <section class="source-block">
+            <div class="archive-head">
+              <span class="archive-head-label">资料来源</span>
+              <span class="source-note">官方公开页面 · 只在站内链接，不转载其音频与图片</span>
+            </div>
+            <ul class="source-list">
+              <li>
+                <span class="source-org">NOAA Fisheries</span>
+                <a
+                  class="source-link"
+                  href="https://www.fisheries.noaa.gov/national/science-data/sounds-ocean-environmental-and-anthropogenic"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Environmental and Anthropogenic Ocean Sounds ↗</a
+                >
+              </li>
+              <li>
+                <span class="source-org">NOAA Fisheries</span>
+                <a
+                  class="source-link"
+                  href="https://www.fisheries.noaa.gov/national/science-data/sounds-ocean-fish-and-invertebrates"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Fish and Invertebrates: Sounds in the Ocean ↗</a
+                >
+              </li>
+              <li>
+                <span class="source-org">NOAA</span>
+                <a
+                  class="source-link"
+                  href="https://www.noaa.gov/marine-mammals-underwater-noise"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Marine Mammals: Underwater Noise ↗</a
+                >
+              </li>
+              <li>
+                <span class="source-org">NOAA</span>
+                <a
+                  class="source-link"
+                  href="https://www.noaa.gov/explainers/soundcheck-ocean-noise"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Soundcheck: Ocean Noise ↗</a
+                >
+              </li>
+              <li>
+                <span class="source-org">NOAA</span>
+                <a
+                  class="source-link"
+                  href="https://oceannoise.noaa.gov/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Ocean Noise Strategy ↗</a
+                >
+              </li>
+              <li>
+                <span class="source-org">国际海事组织（IMO）</span>
+                <a
+                  class="source-link"
+                  href="https://www.imo.org/en/mediacentre/hottopics/pages/noise.aspx"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Ship Noise ↗</a
+                >
+              </li>
+              <li>
+                <span class="source-org">国际海事组织（IMO）</span>
+                <a
+                  class="source-link"
+                  href="https://www.imo.org/en/mediacentre/pages/whatsnew-1818.aspx"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Addressing Underwater Noise from Ships (2023) ↗</a
+                >
+              </li>
+            </ul>
+          </section>
+
           <div class="help-box hidden" id="help-box">
             <h3>操作说明</h3>
             <ul>
@@ -194,11 +281,14 @@
               <li>声波<b>不能穿墙</b>：墙后的区域必须绕行到另一条通路后才能被探测到。</li>
               <li>被声波触及的<b>观测节点</b>（暖黄色）会被永久激活。</li>
               <li>激活全部必需观测节点后，<b>出口</b>开启，走进出口即可离开调查区。</li>
+              <li><b>出口格本身是可以走上去的</b>：节点没集齐时踩上去不会结束调查，只是还不能离开。</li>
               <li><b>尖刺</b>（红）扣血，<b>回声干扰器</b>（紫）会清空你已记住的地图——干扰是游戏机制中的表现，不是真实海洋噪声的物理仿真。</li>
               <li>陷阱被声波扫到后会留下警示标记，记得绕开它们。</li>
               <li>通关按<b>脉冲次数</b>评星：三星线 = 理论最优次数 + 1。这是游戏效率指标，不是现实环境噪声减排量。</li>
               <li><b>随机关卡</b>由种子生成，同一种子必定是同一张地图，可以复制种子码分享。</li>
               <li><b>我的关卡</b>可以自己画调查区地图，保存后再导出分享码发给朋友。</li>
+              <li>「探测脉冲」是<b>玩法规则</b>：本作不实现真实主动声呐的信号发射、回波测距与水下声场传播，游戏里的主动脉冲探索与科研现场的<b>被动声学监测</b>也不是同一方法。</li>
+              <li>作品的海洋声景表述依据 <b>NOAA / NOAA Fisheries / 国际海事组织（IMO）</b> 的公开资料，通关知识卡与首页「资料来源」都能溯源；随机关卡与自制关卡不对应任何真实海域。</li>
             </ul>
           </div>
 

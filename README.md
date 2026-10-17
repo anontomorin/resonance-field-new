@@ -22,12 +22,59 @@
 作品以海洋声景为现实议题，但游戏机制与科研事实严格分开，避免过度表述：
 
 - 海洋声景、生命信号与水下噪声相关表述，依据 NOAA / NOAA Fisheries / 国际海事组织（IMO）
-  的公开资料；每张通关知识卡都带有机构名与外链来源。
+  的公开资料；每张通关知识卡都带有机构名与外链来源（完整来源见下方「资料来源」）。
 - 游戏中的脉冲、墙体遮挡与「回声干扰器」是**玩法抽象**，不等于真实声场或真实声呐模型；
   干扰器也不是真实船舶噪声的物理传播仿真。
 - 通关按脉冲次数评星只是**游戏效率指标**，不代表现实环境噪声的减排量。
 - 节点是游戏目标，不代表已识别的鲸、海豚或某个物种；随机关卡也不对应任何真实海域。
+- 画面里缓慢漂移的微粒与上浮气泡是**氛围装饰**（均匀铺满画面、不携带任何地图信息），
+  不是真实海况、悬浮物浓度或生物分布的再现。
 - 作品只链接官方页面，不下载或嵌入未经确认授权的科研机构音频 / 图片。
+
+## 资料来源
+
+作品里的每一条海洋声景表述都能溯源到官方公开页面。站点只做**链接**：
+不下载也不嵌入这些页面的音频与图片——同一机构的不同页面，其媒体素材的版权与署名
+条件各不相同，要使用需逐项核对。
+
+| # | 机构 | 页面 |
+|---|---|---|
+| [1] | NOAA Fisheries | [Environmental and Anthropogenic Ocean Sounds](https://www.fisheries.noaa.gov/national/science-data/sounds-ocean-environmental-and-anthropogenic) |
+| [2] | NOAA | [Marine Mammals: Underwater Noise](https://www.noaa.gov/marine-mammals-underwater-noise) |
+| [3] | 国际海事组织（IMO） | [Ship noise](https://www.imo.org/en/mediacentre/hottopics/pages/noise.aspx) |
+| [4] | 国际海事组织（IMO） | [Addressing Underwater Noise from Ships (2023)](https://www.imo.org/en/mediacentre/pages/whatsnew-1818.aspx) |
+| [5] | NOAA Fisheries | [Fish and Invertebrates: Sounds in the Ocean](https://www.fisheries.noaa.gov/national/science-data/sounds-ocean-fish-and-invertebrates) |
+| [6] | NOAA | [Soundcheck: Ocean Noise](https://www.noaa.gov/explainers/soundcheck-ocean-noise) |
+| [7] | NOAA | [Ocean Noise Strategy](https://oceannoise.noaa.gov/) |
+
+五张通关知识卡与来源的对应关系：
+
+| 卡片 | 关卡 | 来源 |
+|---|---|---|
+| A 海洋并非无声 | 教学：初鸣（id 1） | [1] |
+| B 声音能帮助海洋动物感知环境 | 初次回响（id 2） | [1] |
+| C 水下噪声的影响并不只有一个维度 | 回声走廊（id 4） | [2] |
+| D 船舶也是水下声源之一 | 共振核心（id 5） | [3]（[4] 作背景参考） |
+| E 科学家如何记录水下声音 | 隔墙之声（id 3，附「墙体遮挡是简化模型」） | [1] |
+
+> **[4] 的措辞提醒**：该页标题含「draft revised guidelines agreed」，如需描述指南的
+> **当前状态**，应以 IMO 主题页 [3] 为准，不能只凭这条 2023 年的新闻推断最新法规状态。
+> 因此卡片 D 的链接指向 [3]，正文也不写「已生效 / 已通过」。
+>
+> **[5][6][7]** 目前不挂在任何知识卡上，只作为首页「资料来源」区的延伸阅读。
+
+## 术语表
+
+游戏文案在涉及海洋声学时统一按下列口径用词，避免把游戏机制混同成科研事实：
+
+| 术语 | 本作口径 |
+|---|---|
+| 海洋声景（ocean soundscape） | 某片海域在一定时间与条件下呈现的声音环境，可能同时包含生物、自然环境与人为活动产生的声音。 |
+| 水下噪声（underwater noise） | 描述可能影响海洋动物或声学环境的声音；不简化成单纯「音量大」。 |
+| 水下辐射噪声（underwater radiated noise, URN） | 船舶等声源向水中辐射的噪声；出现在面向普通玩家的卡片里时会附简短解释。 |
+| 被动声学监测（passive acoustic monitoring） | 记录环境中**已有**的声音来开展监测；与玩家在游戏里**主动发射**脉冲探测是两回事。 |
+| 探测脉冲 / 游戏脉冲 | 本作的玩法规则。作品**不实现**真实主动声呐的信号发射、回波测距与水下声场传播，因此不使用「主动声呐」这个词。 |
+| 游戏化抽象 | 为玩法服务的简化规则：墙体阻断脉冲、固定格子衰减、干扰器清除记忆都是本作的游戏规则，不是对真实海洋声场的完整模拟。 |
 
 ---
 
@@ -176,7 +223,8 @@ git remote -v
      显现持续 2.2 秒后回落为约 20% 亮度的探索记忆。
    （模型可切换为四方向 BFS，见「声波传播：双模型」；两者共用同一套调度、可见性与评分口径。）
 4. 共振节点（暖黄色）只有被脉冲**实际抵达**时才会激活，且永久保持。
-5. 全部必需节点激活后出口开启；走进出口即通关。
+5. 全部必需节点激活后出口开启；走进出口即通关。**出口格本身一直是可以走上去的**
+   （未开启时踩上去只是"先来看看"，会提示还不能离开，但不会结束本局）。
 6. 通关后按**本局脉冲次数**给出 1~3 星评价（详见「星级评分」一节）。
 7. 主线关卡进度（解锁 + 最佳用时 + 最佳星级 + 最佳脉冲次数）保存在 localStorage，
    刷新页面后保留；自制关卡保存在另一个键（`resonance-field:custom:v1`），两者互不干扰。
@@ -598,8 +646,10 @@ revealPlayerTile: true // 踏入新格时是否点亮脚下
 
 - `mapAnalysis.ts`：**编辑器实时校验、随机生成自检、导入校验、开发期校验脚本共用这一份实现**。
   除了常规的宽高 / 字符 / S/E/R 数量检查，关键的一条是
-  **把出口 E 当作墙再做一次 BFS** —— 因为出口在节点集齐前是关闭的，
-  如果有节点只能"穿过出口"才能到达，这一关其实是死局。这类地图会被判为不可玩；
+  **把出口 E 当作墙再做一次 BFS** —— 出口格在节点集齐前虽然**可以走上去**（改版后不再挡路，
+  上去只是"先来看看"），但这条检查作为比玩法更严的一道保守防线保留下来：
+  它禁止"有节点只能穿过出口才能到达"的布局，也就是不允许出口格成为地图上某条唯一通路上的必经点。
+  这类地图会被判为不可玩；
   此外还用 `minSpikeCostToClear()`（0-1 BFS + 位掩码 DP）算出走完全程的**最少踩刺次数**，
   超过生命上限就判为不可玩，从根上杜绝"陷阱堆到打不过去"的关卡；
   `optimalVisitOrder()` 用同一份 DP 还原最优节点顺序，供校验脚本真实模拟通关；
@@ -689,6 +739,21 @@ revealDuration / memoryAlpha / cooldown / revealPlayerTile`）、
 jammerRadius / shakeDuration / rememberTrapsOnDeath / healOnResonator`）与
 `src/game/StarRating.ts`（三 / 二星阈值由 `par` 派生），
 关卡可通过 `LevelDefinition.sonar` 与 `LevelDefinition.hazard` 分别覆盖。
+
+## 发布包与隐私卫生
+
+本项目是纯前端作品，交付包里**不应该**出现开发期的临时产物或任何个人数据：
+
+- **排除**：`.git/`、`node_modules/`、`.tmp/`、构建缓存与日志、浏览器 profile / 用户数据目录。
+- **保留**：`package.json`、`package-lock.json`、`src/`、`index.html`、`scripts/`、
+  `docs/`、配置文件，以及一份清晰的 README。
+- **不得包含**：个人访问令牌（PAT）、Cookie、账号数据、浏览器配置目录、私密环境变量。
+- 打包应从**干净目录或干净检出副本**重新进行，并在打包前跑一遍
+  `npm ci` → `npm run build` → `npm run validate`。
+- 只记录**实际跑过**的验证结果；没有重新执行的浏览器测试要明确标注「未复测」。
+
+`.gitignore` 已覆盖 `node_modules/`、`.tmp/`、`dist/` 等条目，但发布前仍需人工确认
+压缩包里没有 `.tmp/` 下的 Chromium 配置目录——它可能包含浏览历史、站点存储等会话信息。
 
 ## 已知限制
 

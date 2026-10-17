@@ -2,10 +2,25 @@ import { LevelSession } from '../game/LevelSession';
 import { Theme } from './Theme';
 
 /**
+ * 稳定的伪随机序列：同一个下标永远得到同一个 0~1 值。
+ * 氛围微粒用它定位而不是 Math.random()，否则每帧重新洗牌、微粒会乱跳。
+ */
+function hash01(n: number): number {
+  let x = Math.imul(n ^ 0x9e3779b9, 0x85ebca6b);
+  x ^= x >>> 13;
+  x = Math.imul(x, 0xc2b2ae35);
+  x ^= x >>> 16;
+  return (x >>> 0) / 4294967296;
+}
+
+/**
  * Canvas 2D 渲染器。
  *
  * 只读取会话状态并绘制，不修改任何游戏数据。
  * 地图显示分三种状态：未知（不画布局）、当前显现（明亮）、探索记忆（低透明度）。
+ *
+ * 另外叠了一层纯装饰的**海洋氛围**（水光 / 悬浮微粒 / 上浮气泡，见 drawOcean*）：
+ * 它均匀铺满整块画布，因此读不出任何关于地图布局的信息。
  */
 export class CanvasRenderer {
   private canvas: HTMLCanvasElement;
@@ -13,6 +28,8 @@ export class CanvasRenderer {
   private width = 0;
   private height = 0;
   private dpr = 1;
+  /** 系统偏好"减少动态效果"时，氛围层停住漂移（微粒本身保留） */
+  private reduceMotion = false;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -26,6 +43,9 @@ export class CanvasRenderer {
   resize(): void {
     const rect = this.canvas.getBoundingClientRect();
     this.dpr = Math.min(2, window.devicePixelRatio || 1);
+    this.reduceMotion =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     this.width = Math.max(320, Math.floor(rect.width));
     this.height = Math.max(240, Math.floor(rect.height));
     this.canvas.width = Math.floor(this.width * this.dpr);
@@ -48,6 +68,77 @@ export class CanvasRenderer {
   }
 
   /**
+   * 海洋氛围之一：水光。
+   * 两团极淡的光斑缓慢掠过水面，均匀铺满画布，压在场景最底层制造"在水下"的体积感。
+   */
+  private drawOceanHaze(now: number): void {
+    const { ctx } = this;
+    const w = this.width;
+    const h = this.height;
+    const t = this.reduceMotion ? 0 : now;
+    const driftX = (t * 0.013) % 1;
+    const driftY = (t * 0.009) % 1;
+
+    ctx.save();
+    ctx.fillStyle = Theme.oceanHaze;
+    for (let i = 0; i < 2; i += 1) {
+      const cx = ((driftX + i * 0.5) % 1) * (w * 1.5) - w * 0.25;
+      const cy = ((driftY + i * 0.35) % 1) * (h * 1.4) - h * 0.2;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, w * 0.34, h * 0.24, 0.42, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  /**
+   * 海洋氛围之二：悬浮微粒（海雪）与上浮气泡。
+   * 画在场景之上，透明度极低；位置用 hash01 稳定生成，避免逐帧乱跳。
+   */
+  private drawOceanDrift(now: number): void {
+    const { ctx } = this;
+    const t = this.reduceMotion ? 0 : now;
+    const w = this.width;
+    const h = this.height;
+
+    ctx.save();
+
+    // 悬浮微粒：缓慢下沉 / 侧移的细小颗粒
+    const snowCount = Math.min(110, Math.round((w * h) / 11000));
+    ctx.fillStyle = Theme.oceanSnow;
+    for (let i = 0; i < snowCount; i += 1) {
+      const speed = 0.004 + hash01(i + 707) * 0.01;
+      const size = 0.7 + hash01(i + 991) * 1.4;
+      const x = (hash01(i) * w + t * speed * w * 0.14) % w;
+      const y = (hash01(i + 1301) * h + t * speed * h) % h;
+      ctx.beginPath();
+      ctx.arc(x, y, size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 上浮气泡：更大、更慢，带一圈更亮的边缘
+    const bubbleCount = Math.min(16, Math.round((w * h) / 52000));
+    for (let i = 0; i < bubbleCount; i += 1) {
+      const speed = 0.018 + hash01(i + 211) * 0.028;
+      const radius = 2 + hash01(i + 401) * 3.6;
+      const span = h + radius * 4;
+      const up = (t * speed * h) % span;
+      const x = (((hash01(i + 53) * w + Math.sin(t * 0.6 + i * 1.7) * radius * 2.2) % w) + w) % w;
+      const y = h + radius * 2 - up;
+
+      ctx.fillStyle = Theme.oceanBubbleFill;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = Theme.oceanBubbleRim;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  /**
    * 绘制一帧。
    * @param session 当前关卡会话（标题页时为 null，只画背景）
    */
@@ -64,6 +155,11 @@ export class CanvasRenderer {
     const originY = Math.floor((this.height - tileSize * map.height) / 2);
     const now = session.visibility.time;
 
+    // 海洋氛围分两层夹住场景：水光在下（水体的体积感），
+    // 悬浮微粒与气泡在上（悬在水里的悬浮物）。
+    // 两层都放在震动平移之外，否则"水"会跟着屏幕一起抖。
+    this.drawOceanHaze(now);
+
     const { ctx } = this;
     // 挨打时的屏幕震动：整体平移一点，给"被扎到"一个身体上的反馈
     if (session.shakeTimer > 0) {
@@ -74,10 +170,11 @@ export class CanvasRenderer {
       ctx.translate(sx, sy);
       this.drawScene(session, originX, originY, tileSize, now);
       ctx.restore();
-      return;
+    } else {
+      this.drawScene(session, originX, originY, tileSize, now);
     }
 
-    this.drawScene(session, originX, originY, tileSize, now);
+    this.drawOceanDrift(now);
   }
 
   private drawScene(
@@ -486,11 +583,19 @@ export class CanvasRenderer {
     const alpha = base + (this.litAlpha(session, index, base) - base) * 0.5;
     if (alpha <= 0.001) return;
 
-    const cx = ox + (exit.x + 0.5) * tile;
-    const cy = oy + (exit.y + 0.5) * tile;
+    const px = ox + exit.x * tile;
+    const py = oy + exit.y * tile;
+    const cx = px + tile / 2;
+    const cy = py + tile / 2;
     const r = tile * 0.3;
 
     ctx.save();
+    // 出口格本身走得上去（未开启时不再挡路），所以先铺一层地面底色，
+    // 让它读起来"站得住"，而不是一块被挖空的黑暗洞口。
+    ctx.globalAlpha = Math.min(1, alpha * 0.95);
+    ctx.fillStyle = Theme.floorFill;
+    ctx.fillRect(px, py, tile, tile);
+
     ctx.globalAlpha = Math.min(1, alpha * 1.1);
 
     if (session.exitOpen) {

@@ -81,6 +81,13 @@ export const Theme = {
   trapMemoryMark: 'rgba(207, 95, 90, 0.9)',
   jammerMemoryMark: 'rgba(154, 123, 192, 0.9)',
 
+  /** 海洋氛围层：纯装饰，均匀铺满整块画布，不携带任何地图布局信息。
+   *  亮度必须压得很低，否则会和"亮起来才是信息"的规则打架。 */
+  oceanHaze: 'rgba(95, 201, 221, 0.05)',
+  oceanSnow: 'rgba(182, 234, 243, 0.16)',
+  oceanBubbleFill: 'rgba(200, 242, 250, 0.14)',
+  oceanBubbleRim: 'rgba(200, 242, 250, 0.34)',
+
   /** 文字与 HUD */
   text: '#d8dce0',
   textDim: 'rgba(139, 147, 156, 0.9)'
