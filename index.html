@@ -3,6 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23040a0e'/%3E%3Ccircle cx='16' cy='16' r='11' fill='none' stroke='%236fd3e6' stroke-opacity='.35'/%3E%3Ccircle cx='16' cy='16' r='6' fill='none' stroke='%236fd3e6' stroke-opacity='.55'/%3E%3Ccircle cx='16' cy='16' r='2.4' fill='%23b9f0f8'/%3E%3C/svg%3E"
+    />
+    <link rel="preload" as="font" type="font/woff2" href="./src/assets/fonts/rajdhani-600.woff2" crossorigin />
+    <link rel="preload" as="font" type="font/woff2" href="./src/assets/fonts/noto-sans-sc-500-0.woff2" crossorigin />
+    <link rel="preload" as="font" type="font/woff2" href="./src/assets/fonts/zcool-0.woff2" crossorigin />
     <meta
       name="description"
       content="《共振场：听见深海》——一次关于海洋声景的互动探索。以声波探索未知海域的纯前端网格解谜，通关附可追溯来源的海洋声景知识卡。"
@@ -15,27 +22,34 @@
       <div id="stage">
         <canvas id="game-canvas"></canvas>
 
-        <!-- 游戏内 HUD -->
+        <!-- 游戏内 HUD：观测舱读数层（每块读数都压在 AI 生成的仪表舱上） -->
         <div id="hud" class="hud hidden">
           <div class="hud-top">
             <div class="hud-left">
               <div class="hud-level" id="hud-level-name">初次回响</div>
               <div class="hud-sub" id="hud-level-sub">发出第一声回响</div>
+              <div class="hud-depth" aria-hidden="true">
+                <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+              </div>
             </div>
             <div class="hud-center">
               <div class="stat">
+                <span class="stat-icon" aria-hidden="true"></span>
                 <span class="stat-label">观测节点</span>
                 <span class="stat-value" id="hud-nodes">0 / 1</span>
               </div>
               <div class="stat">
+                <span class="stat-icon" aria-hidden="true"></span>
                 <span class="stat-label">生命</span>
                 <span class="stat-value hearts" id="hud-health"></span>
               </div>
               <div class="stat">
+                <span class="stat-icon" aria-hidden="true"></span>
                 <span class="stat-label">用时</span>
                 <span class="stat-value" id="hud-time">00:00</span>
               </div>
               <div class="stat">
+                <span class="stat-icon" aria-hidden="true"></span>
                 <span class="stat-label">脉冲</span>
                 <span class="stat-value" id="hud-pulses">0</span>
               </div>
@@ -70,6 +84,7 @@
             <div class="cooldown">
               <span class="cooldown-label">脉冲充能</span>
               <div class="cooldown-bar"><div class="cooldown-fill" id="cooldown-fill"></div></div>
+              <span class="cooldown-dial" aria-hidden="true"></span>
             </div>
           </div>
 
@@ -88,16 +103,28 @@
         </div>
       </div>
 
-      <!-- ===================== 首页：驾驶舱主控台 =====================
-           版面就是一块全屏驾驶舱，不是一条居中的窄栏：
-           左舷 .console-deck 是读数与操作，右舷 .console-scope 是声呐显示器，
-           下方 .archive-block 是全宽的档案样本架。 -->
+      <!-- ===================== 首页：深海观测舱 =====================
+           整块版面按真实观测舱排布：顶部是舱顶导轨与铭牌，
+           左舷是读数与操作，右舷是舷窗（中心透出玻璃与扫描环），
+           下方全宽铺开模式磁贴、深海声景档案与资料来源。
+           面板、按钮、卡片的质感全部由 AI 生成的美术资源承载。 -->
       <div class="overlay screen" id="overlay-title">
         <div class="home">
+          <div class="hull-rail" id="hull-rail" aria-hidden="true">
+            <span class="rail-rivet"></span>
+            <span class="rail-strip"></span>
+            <span class="rail-strip"></span>
+            <span class="rail-rivet"></span>
+          </div>
+
           <div class="console-top">
             <div class="console-deck">
               <div class="home-brand">
-                <div class="title-mark">DEEP SEA SOUNDSCAPE</div>
+                <div class="title-mark">
+                  <span class="mark-line"></span>
+                  <span>深海声场观测计划</span>
+                  <span class="mark-line"></span>
+                </div>
                 <h1 class="game-title">共振场：听见深海</h1>
                 <p class="game-subtitle">一次关于海洋声景的互动探索</p>
                 <p class="game-tagline">海洋并非无声。穿过未知与干扰，重新听见生命信号。</p>
@@ -122,45 +149,17 @@
                 </li>
               </ol>
 
-              <div class="mode-grid">
-                <button class="mode-card" id="mode-campaign" type="button">
-                  <span class="mode-icon">01</span>
-                  <span>
-                    <span class="mode-name">主线关卡</span>
-                    <span class="mode-desc">教学关 + 4 张手工海域，逐关解锁</span>
-                  </span>
-                  <span class="mode-meta" id="mode-campaign-meta">0 / 5</span>
-                </button>
-                <button class="mode-card" id="mode-random" type="button">
-                  <span class="mode-icon">02</span>
-                  <span>
-                    <span class="mode-name">随机回声</span>
-                    <span class="mode-desc">每次生成一片未知海域，种子可分享</span>
-                  </span>
-                  <span class="mode-meta">无限</span>
-                </button>
-                <button class="mode-card" id="mode-custom" type="button">
-                  <span class="mode-icon">03</span>
-                  <span>
-                    <span class="mode-name">我的关卡</span>
-                    <span class="mode-desc">自己画调查区，导出分享码给朋友</span>
-                  </span>
-                  <span class="mode-meta" id="mode-custom-meta">0 张</span>
-                </button>
-              </div>
-
               <div class="home-actions">
                 <button class="btn ghost" id="btn-help" type="button">操作说明</button>
                 <button class="btn ghost" id="btn-sound-title" type="button">声音：关</button>
               </div>
             </div>
 
-            <!-- 右舷声呐显示器：同心刻度环 + 旋转扫描扇形 + 扩散脉冲环 + 回波亮点。
-                 整块是纯 CSS 装饰（可动的部分都标了 aria-hidden），
+            <!-- 右舷舷窗：压环是 AI 生成的厚重金属环，环内透出玻璃底纹与扫描动画。
+                 整块是纯装饰（可动的部分都标了 aria-hidden），
                  下面的读数行才是信息，而且只写游戏内真实机制。 -->
             <aside class="console-scope">
               <div class="scope-head">
-                <span class="scope-kicker">Sonar Array</span>
                 <span class="scope-led" aria-hidden="true"></span>
               </div>
               <div class="scope-bezel" aria-hidden="true">
@@ -176,6 +175,37 @@
               </ul>
               <div class="scope-trace" aria-hidden="true"></div>
             </aside>
+          </div>
+
+          <!-- 三种进入方式：全宽三列磁贴，每张贴一张 AI 生成的舱内照片作为封面 -->
+          <div class="mode-grid">
+            <button class="mode-card" id="mode-campaign" type="button">
+              <span class="mode-cover" aria-hidden="true"></span>
+              <span class="mode-icon">01</span>
+              <span class="mode-text">
+                <span class="mode-name">主线关卡</span>
+                <span class="mode-desc">教学关 + 4 张手工海域，逐关解锁</span>
+              </span>
+              <span class="mode-meta" id="mode-campaign-meta">0 / 5</span>
+            </button>
+            <button class="mode-card" id="mode-random" type="button">
+              <span class="mode-cover" aria-hidden="true"></span>
+              <span class="mode-icon">02</span>
+              <span class="mode-text">
+                <span class="mode-name">随机回声</span>
+                <span class="mode-desc">每次生成一片未知海域，种子可分享</span>
+              </span>
+              <span class="mode-meta">无限</span>
+            </button>
+            <button class="mode-card" id="mode-custom" type="button">
+              <span class="mode-cover" aria-hidden="true"></span>
+              <span class="mode-icon">03</span>
+              <span class="mode-text">
+                <span class="mode-name">我的关卡</span>
+                <span class="mode-desc">自己画调查区，导出分享码给朋友</span>
+              </span>
+              <span class="mode-meta" id="mode-custom-meta">0 张</span>
+            </button>
           </div>
 
           <!-- 深海声景档案：由 NOAA / NOAA Fisheries / IMO 公开资料整理的五张科普卡。
@@ -351,7 +381,7 @@
                   <input
                     class="input"
                     id="random-code"
-                    placeholder="RFM1~... 或 RFR1~..."
+                    placeholder="RESO·... 或 RESE·..."
                     autocomplete="off"
                     spellcheck="false"
                   />
@@ -381,7 +411,7 @@
                   <input
                     class="input"
                     id="custom-code"
-                    placeholder="RFM1~..."
+                    placeholder="RESO·..."
                     autocomplete="off"
                     spellcheck="false"
                   />
@@ -504,12 +534,15 @@
               <!-- 深海声景档案：通关后附带的科普知识卡，来源与链接固定，正文完整可读，
                    不阻断任何结算按钮，也不参与手柄的线性焦点导航。 -->
               <div class="knowledge-card hidden" id="complete-knowledge">
-                <div class="kc-tag">深海声景档案</div>
-                <h3 class="kc-title" id="kc-title"></h3>
-                <p class="kc-body" id="kc-body"></p>
-                <div class="kc-foot">
-                  <span class="kc-source" id="kc-source"></span>
-                  <a class="kc-link" id="kc-link" target="_blank" rel="noopener noreferrer">查看原始资料 ↗</a>
+                <div class="kc-art" id="kc-art" aria-hidden="true"></div>
+                <div class="kc-inner">
+                  <div class="kc-tag">深海声景档案</div>
+                  <h3 class="kc-title" id="kc-title"></h3>
+                  <p class="kc-body" id="kc-body"></p>
+                  <div class="kc-foot">
+                    <span class="kc-source" id="kc-source"></span>
+                    <a class="kc-link" id="kc-link" target="_blank" rel="noopener noreferrer">查看原始资料 ↗</a>
+                  </div>
                 </div>
               </div>
             </div>
@@ -557,12 +590,15 @@
             <div class="result-split-main">
               <!-- 深海声景档案：主线最后一关的知识卡，与通关面板同一套结构与样式 -->
               <div class="knowledge-card hidden" id="final-knowledge">
-                <div class="kc-tag">深海声景档案</div>
-                <h3 class="kc-title" id="fkc-title"></h3>
-                <p class="kc-body" id="fkc-body"></p>
-                <div class="kc-foot">
-                  <span class="kc-source" id="fkc-source"></span>
-                  <a class="kc-link" id="fkc-link" target="_blank" rel="noopener noreferrer">查看原始资料 ↗</a>
+                <div class="kc-art" id="fkc-art" aria-hidden="true"></div>
+                <div class="kc-inner">
+                  <div class="kc-tag">深海声景档案</div>
+                  <h3 class="kc-title" id="fkc-title"></h3>
+                  <p class="kc-body" id="fkc-body"></p>
+                  <div class="kc-foot">
+                    <span class="kc-source" id="fkc-source"></span>
+                    <a class="kc-link" id="fkc-link" target="_blank" rel="noopener noreferrer">查看原始资料 ↗</a>
+                  </div>
                 </div>
               </div>
             </div>

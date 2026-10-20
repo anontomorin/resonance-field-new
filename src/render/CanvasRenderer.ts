@@ -1,5 +1,7 @@
 import { LevelSession } from '../game/LevelSession';
 import { Theme } from './Theme';
+import { GLYPHS, GlyphName } from '../assets/artAssets';
+import { BackgroundRenderer } from './BackgroundRenderer';
 
 /**
  * 稳定的伪随机序列：同一个下标永远得到同一个 0~1 值。
@@ -30,13 +32,56 @@ export class CanvasRenderer {
   private dpr = 1;
   /** 系统偏好"减少动态效果"时，氛围层停住漂移（微粒本身保留） */
   private reduceMotion = false;
+  /** 五枚金属徽记；未加载完成时对应位置回退到矢量绘制 */
+  private glyphs: Partial<Record<GlyphName, HTMLImageElement>> = {};
+  /** 风景背景层：海沟远景 + 体积光 + 焦散 */
+  private backdrop = new BackgroundRenderer();
+  /** HUD 上下浮层占用的高度（CSS 像素），地图只画在两者之间 */
+  private insetTop = 0;
+  private insetBottom = 0;
+  private insetCheckedAt = -Infinity;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('无法获取 Canvas 2D 上下文');
     this.ctx = ctx;
+    this.loadGlyphs();
     this.resize();
+  }
+
+  /** 预载徽记图片；失败或尚未就绪时由调用方回退到矢量绘制 */
+  private loadGlyphs(): void {
+    (Object.keys(GLYPHS) as GlyphName[]).forEach((name) => {
+      const img = new Image();
+      img.decoding = 'async';
+      img.src = GLYPHS[name];
+      this.glyphs[name] = img;
+    });
+  }
+
+  private glyphReady(name: GlyphName): HTMLImageElement | null {
+    const img = this.glyphs[name];
+    if (!img || !img.complete || img.naturalWidth === 0) return null;
+    return img;
+  }
+
+  /**
+   * 画一枚徽记：居中、正方、按格子尺寸缩放。
+   * 只在格子够大时使用图片——tile 小于 18 时缩到十几像素，
+   * 照片级别的细节会糊成一团，不如保留原来的矢量符号。
+   */
+  private drawGlyph(name: GlyphName, cx: number, cy: number, tile: number, ratio: number, filter?: string): boolean {
+    if (tile < 18) return false;
+    const img = this.glyphReady(name);
+    if (!img) return false;
+    const size = tile * ratio;
+    const { ctx } = this;
+    const prevFilter = ctx.filter;
+    if (filter) ctx.filter = filter;
+    ctx.drawImage(img, cx - size / 2, cy - size / 2, size, size);
+    ctx.filter = prevFilter;
+    return true;
   }
 
   /** 根据窗口尺寸与 DPR 调整画布分辨率 */
@@ -54,41 +99,44 @@ export class CanvasRenderer {
   }
 
   private drawBackground(): void {
-    const { ctx } = this;
-    // 三层径向渐变：中心一圈稍亮，中段过渡，四周压到近黑。
-    // 只用一个中心 + 一个边缘会让画面显得"平板"，中间那层负责制造纵深。
-    const cx = this.width / 2;
-    const cy = this.height * 0.44;
-    const gradient = ctx.createRadialGradient(cx, cy, 30, cx, this.height / 2, Math.max(this.width, this.height) * 0.8);
-    gradient.addColorStop(0, Theme.backgroundInner);
-    gradient.addColorStop(0.5, Theme.backgroundMid);
-    gradient.addColorStop(1, Theme.backgroundOuter);
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, this.width, this.height);
+    this.backdrop.draw(this.ctx, this.width, this.height, performance.now() / 1000, this.reduceMotion);
   }
 
   /**
-   * 海洋氛围之一：水光。
-   * 两团极淡的光斑缓慢掠过水面，均匀铺满画布，压在场景最底层制造"在水下"的体积感。
+   * 测量 HUD 顶栏、教程提示条与底栏的位置，得到地图可用的中间区域。
+   * 布局稳定，每 400ms 重测一次即可；逐帧读 DOM 会反复触发布局计算。
    */
-  private drawOceanHaze(now: number): void {
-    const { ctx } = this;
-    const w = this.width;
-    const h = this.height;
-    const t = this.reduceMotion ? 0 : now;
-    const driftX = (t * 0.013) % 1;
-    const driftY = (t * 0.009) % 1;
+  private refreshInsets(): void {
+    const now = performance.now();
+    if (now - this.insetCheckedAt < 400) return;
+    this.insetCheckedAt = now;
 
-    ctx.save();
-    ctx.fillStyle = Theme.oceanHaze;
-    for (let i = 0; i < 2; i += 1) {
-      const cx = ((driftX + i * 0.5) % 1) * (w * 1.5) - w * 0.25;
-      const cy = ((driftY + i * 0.35) % 1) * (h * 1.4) - h * 0.2;
-      ctx.beginPath();
-      ctx.ellipse(cx, cy, w * 0.34, h * 0.24, 0.42, 0, Math.PI * 2);
-      ctx.fill();
+    const hud = document.getElementById('hud');
+    const top = hud?.querySelector<HTMLElement>('.hud-top');
+    const bottom = hud?.querySelector<HTMLElement>('.hud-bottom');
+    if (!hud || hud.classList.contains('hidden') || !top || !bottom) {
+      this.insetTop = 0;
+      this.insetBottom = this.height;
+      return;
     }
-    ctx.restore();
+
+    let topEdge = top.getBoundingClientRect().bottom;
+    const tip = hud.querySelector<HTMLElement>('.tipbar');
+    if (tip && !tip.classList.contains('hidden')) {
+      const tipRect = tip.getBoundingClientRect();
+      if (tipRect.height > 0) topEdge = Math.max(topEdge, tipRect.bottom);
+    }
+
+    const topInset = Math.max(0, topEdge + 8);
+    const bottomInset = Math.min(this.height, bottom.getBoundingClientRect().top - 8);
+    // 极端情况下（窗口很矮）浮层可能把中间挤没，此时退回整块画布
+    if (bottomInset - topInset < 120) {
+      this.insetTop = 0;
+      this.insetBottom = this.height;
+      return;
+    }
+    this.insetTop = topInset;
+    this.insetBottom = bottomInset;
   }
 
   /**
@@ -145,21 +193,22 @@ export class CanvasRenderer {
   draw(session: LevelSession | null): void {
     this.drawBackground();
     if (!session) return;
+    this.refreshInsets();
 
     const map = session.map;
+    // 地图只在 HUD 上下的浮层之间居中，而不是整块画布：
+    // 否则教程提示条、摇杆会直接压住地图中央。
+    const available = Math.max(120, this.insetBottom - this.insetTop);
     const tile = Math.floor(
-      Math.min(this.width / map.width, this.height / map.height)
+      Math.min(this.width / map.width, available / map.height)
     );
     const tileSize = Math.max(8, tile);
     const originX = Math.floor((this.width - tileSize * map.width) / 2);
-    const originY = Math.floor((this.height - tileSize * map.height) / 2);
+    const originY = Math.floor(this.insetTop + (available - tileSize * map.height) / 2);
     const now = session.visibility.time;
 
-    // 海洋氛围分两层夹住场景：水光在下（水体的体积感），
-    // 悬浮微粒与气泡在上（悬在水里的悬浮物）。
-    // 两层都放在震动平移之外，否则"水"会跟着屏幕一起抖。
-    this.drawOceanHaze(now);
-
+    // 悬浮微粒与气泡夹在场景之上，悬在水里的悬浮物；
+    // 水光与体积光已经由背景层（BackgroundRenderer）负责。
     const { ctx } = this;
     // 挨打时的屏幕震动：整体平移一点，给"被扎到"一个身体上的反馈
     if (session.shakeTimer > 0) {
@@ -185,7 +234,7 @@ export class CanvasRenderer {
     now: number
   ): void {
     const map = session.map;
-    this.drawUnknownField(originX, originY, tileSize, map.width, map.height);
+    this.drawUnknownField(originX, originY, tileSize, map.width, map.height, now);
     this.drawTiles(session, originX, originY, tileSize, now);
     this.drawHazards(session, originX, originY, tileSize, now);
     this.drawExit(session, originX, originY, tileSize, now);
@@ -223,14 +272,25 @@ export class CanvasRenderer {
     oy: number,
     tile: number,
     cols: number,
-    rows: number
+    rows: number,
+    now: number
   ): void {
     const { ctx } = this;
     const w = tile * cols;
     const h = tile * rows;
     ctx.save();
+
+    // 扫描板：不是一块平涂的暗色，而是一块微微受光的仪器底板——
+    // 中心亮一点、四边压下去，地图才像"嵌在舱板里"而不是浮在空处。
+    const plate = ctx.createLinearGradient(ox, oy, ox, oy + h);
+    plate.addColorStop(0, 'rgba(22, 50, 65, 0.52)');
+    plate.addColorStop(0.55, 'rgba(11, 29, 40, 0.46)');
+    plate.addColorStop(1, 'rgba(5, 15, 22, 0.56)');
+    ctx.fillStyle = plate;
+    ctx.fillRect(ox, oy, w, h);
+
     ctx.fillStyle = Theme.unknownBase;
-    ctx.globalAlpha = 0.62;
+    ctx.globalAlpha = 0.5;
     ctx.fillRect(ox, oy, w, h);
     ctx.globalAlpha = 1;
 
@@ -244,11 +304,67 @@ export class CanvasRenderer {
       }
     }
 
-    // 外框：给整张地图一个"扫描区域"的边界，避免画面显得没有尽头
-    ctx.globalAlpha = 0.5;
-    ctx.strokeStyle = 'rgba(216, 220, 224, 0.14)';
+    // 扫描网格：等距的细线铺满整块底板，只表达"这里是一张待扫描的网"，
+    // 与真实格子边界无关，因此不泄露任何布局。
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = 'rgba(150, 205, 230, 0.05)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let x = ox + gap; x < ox + w; x += gap) {
+      ctx.moveTo(x + 0.5, oy);
+      ctx.lineTo(x + 0.5, oy + h);
+    }
+    for (let y = oy + gap; y < oy + h; y += gap) {
+      ctx.moveTo(ox, y + 0.5);
+      ctx.lineTo(ox + w, y + 0.5);
+    }
+    ctx.stroke();
+
+    // 扫描光带：一道几乎看不见的冷光自上而下扫过整块底板。
+    // 它均匀横贯整个区域，不携带任何格子信息；减少动态效果时停在顶部。
+    const sweepT = this.reduceMotion ? 0.2 : (now * 0.12) % 1;
+    const sweepY = oy - h * 0.25 + sweepT * h * 1.5;
+    const band = ctx.createLinearGradient(0, sweepY - h * 0.22, 0, sweepY + h * 0.22);
+    band.addColorStop(0, 'rgba(111, 211, 230, 0)');
+    band.addColorStop(0.5, 'rgba(111, 211, 230, 0.055)');
+    band.addColorStop(1, 'rgba(111, 211, 230, 0)');
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(ox, oy, w, h);
+    ctx.clip();
+    ctx.fillStyle = band;
+    ctx.fillRect(ox, sweepY - h * 0.22, w, h * 0.44);
+    ctx.restore();
+
+    // 外框：给整张地图一个"扫描区域"的边界，避免画面显得没有尽头。
+    // 内外双线 + 一圈极淡的内发光，读起来像嵌在舱板上的取景窗。
+    ctx.globalAlpha = 0.7;
+    ctx.strokeStyle = 'rgba(216, 220, 224, 0.22)';
     ctx.lineWidth = 1;
     ctx.strokeRect(ox - 0.5, oy - 0.5, w + 1, h + 1);
+    ctx.globalAlpha = 0.45;
+    ctx.strokeStyle = 'rgba(111, 211, 230, 0.14)';
+    ctx.strokeRect(ox - 3.5, oy - 3.5, w + 7, h + 7);
+
+    // 四角角标：像取景框一样把扫描区扣住，画面立刻有"仪器取景"的感觉
+    ctx.globalAlpha = 0.62;
+    ctx.strokeStyle = 'rgba(111, 211, 230, 0.9)';
+    ctx.lineWidth = 2;
+    const arm = Math.min(22, Math.min(w, h) * 0.06);
+    const pad = 6;
+    const corners: Array<[number, number, number, number]> = [
+      [ox - pad, oy - pad, 1, 1],
+      [ox + w + pad, oy - pad, -1, 1],
+      [ox - pad, oy + h + pad, 1, -1],
+      [ox + w + pad, oy + h + pad, -1, -1]
+    ];
+    for (const [cx, cy, sx, sy] of corners) {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + sy * arm);
+      ctx.lineTo(cx, cy);
+      ctx.lineTo(cx + sx * arm, cy);
+      ctx.stroke();
+    }
     ctx.restore();
   }
 
@@ -278,48 +394,90 @@ export class CanvasRenderer {
         const flash = session.visibility.flashFor(index);
 
         if (kind === 'wall') {
-          // 墙：近黑实心填充 + 斜纹质感 + 亮描边。
-          // 必须和地面拉开明度，否则玩家分不清"能不能走"（重绘时的教训）。
-          ctx.fillStyle = Theme.wallFill;
-          ctx.globalAlpha = Math.min(1, alpha * 1.1);
+          // 墙：近黑岩体。体积靠"上下渐变 + 粗糙颗粒 + 只在临空一侧的岸光"表达，
+          // 不再给每块墙描一圈白框——那会让成片的墙读起来像线框图而不是实心障碍。
+          const jitter = hash01(x * 191 + y * 37);
+          const wa = Math.min(1, alpha * 1.08);
+          ctx.globalAlpha = wa;
+          ctx.fillStyle = `rgb(${Math.round(6 + jitter * 9)}, ${Math.round(11 + jitter * 11)}, ${Math.round(16 + jitter * 13)})`;
           ctx.fillRect(px, py, tile, tile);
 
-          // 斜纹：给墙一层"砌体"读感，和地面的方格细网格在**纹理**上区分，
-          // 这样即使缩小到 tile=9 也能一眼分清墙与地面（只靠颜色不够稳）。
-          if (tile >= 9) {
-            ctx.save();
-            ctx.beginPath();
-            ctx.rect(px, py, tile, tile);
-            ctx.clip();
-            ctx.globalAlpha = Math.min(1, alpha * 0.85);
-            ctx.strokeStyle = Theme.wallHatch;
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            for (let d = -tile; d < tile * 2; d += Math.max(5, tile * 0.34)) {
-              ctx.moveTo(px + d, py);
-              ctx.lineTo(px + d - tile, py + tile);
-            }
-            ctx.stroke();
-            ctx.restore();
-          }
-
-          // 顶部亮边：做出"墙有厚度、光从上方来"的体积感
           if (tile >= 10) {
-            ctx.globalAlpha = Math.min(1, alpha * 0.95);
-            ctx.fillStyle = Theme.wallHighlight;
-            ctx.fillRect(px + 1, py + 1, tile - 2, Math.max(1.5, tile * 0.1));
+            // 顶面：上方水体照亮的一条窄带
+            const faceH = Math.max(2, tile * 0.16);
+            ctx.globalAlpha = wa * 0.9;
+            const face = ctx.createLinearGradient(0, py, 0, py + faceH);
+            face.addColorStop(0, 'rgba(150, 196, 208, 0.26)');
+            face.addColorStop(1, 'rgba(150, 196, 208, 0)');
+            ctx.fillStyle = face;
+            ctx.fillRect(px, py, tile, faceH);
+
+            // 底部积影：让墙体有重量，压得住下面的地面
+            ctx.globalAlpha = wa * 0.8;
+            const shade = ctx.createLinearGradient(0, py + tile * 0.5, 0, py + tile);
+            shade.addColorStop(0, 'rgba(0, 0, 0, 0)');
+            shade.addColorStop(1, 'rgba(0, 0, 0, 0.6)');
+            ctx.fillStyle = shade;
+            ctx.fillRect(px, py + tile * 0.5, tile, tile * 0.5);
           }
 
-          // 描边是墙的主轮廓：比地面亮一档，让它从周围格子里"立起来"。
-          // 用最低 0.35 的地板线兜底，这样记忆层淡下去之后墙的轮廓不会一起消失——
-          // 忘了墙在哪，玩家就会一头撞上去。
-          ctx.globalAlpha = Math.min(1, Math.max(0.35, alpha * (0.8 + flash * 0.2)));
+          // 岩石颗粒：三处固定位置的细碎亮点，避免墙面是一块死黑
+          if (tile >= 14) {
+            ctx.globalAlpha = wa * 0.55;
+            ctx.fillStyle = 'rgba(170, 205, 216, 0.18)';
+            for (let k = 0; k < 3; k += 1) {
+              const rx = px + (0.18 + hash01(x * 31 + y * 57 + k) * 0.64) * tile;
+              const ry = py + (0.2 + hash01(x * 71 + y * 13 + k * 7) * 0.6) * tile;
+              ctx.fillRect(rx, ry, 1.6, 1.6);
+            }
+          }
+
+          // 轮廓只画在"临空"的边上：连续的墙因此是一整块剪影，
+          // 只有与地面相接的地方才勾出一条边，墙的边界反而更清楚。
+          const up = y > 0 ? map.kindAt(x, y - 1) : 'wall';
+          const down = y < map.height - 1 ? map.kindAt(x, y + 1) : 'wall';
+          const left = x > 0 ? map.kindAt(x - 1, y) : 'wall';
+          const right = x < map.width - 1 ? map.kindAt(x + 1, y) : 'wall';
+
+          // 岸光：上沿被水光照到，冷色一条，墙顶因此"立"起来
+          if (up !== 'wall') {
+            ctx.globalAlpha = Math.min(1, wa * (0.7 + flash * 0.3));
+            ctx.strokeStyle = 'rgba(120, 214, 232, 0.5)';
+            ctx.lineWidth = Math.max(1, tile * 0.035);
+            ctx.beginPath();
+            ctx.moveTo(px + 1, py + 0.5);
+            ctx.lineTo(px + tile - 1, py + 0.5);
+            ctx.stroke();
+          }
+
+          // 轮廓兜底：记忆层淡下去后墙仍要能被认出来（忘了墙在哪就会撞上去）
+          ctx.globalAlpha = Math.min(1, Math.max(0.3, alpha * (0.7 + flash * 0.3)));
           ctx.strokeStyle = Theme.wallStroke;
           ctx.lineWidth = 1;
-          ctx.strokeRect(px + 0.5, py + 0.5, tile - 1, tile - 1);
+          ctx.beginPath();
+          if (up !== 'wall') {
+            ctx.moveTo(px + 0.5, py + 0.5);
+            ctx.lineTo(px + tile - 0.5, py + 0.5);
+          }
+          if (down !== 'wall') {
+            ctx.moveTo(px + 0.5, py + tile - 0.5);
+            ctx.lineTo(px + tile - 0.5, py + tile - 0.5);
+          }
+          if (left !== 'wall') {
+            ctx.moveTo(px + 0.5, py + 0.5);
+            ctx.lineTo(px + 0.5, py + tile - 0.5);
+          }
+          if (right !== 'wall') {
+            ctx.moveTo(px + tile - 0.5, py + 0.5);
+            ctx.lineTo(px + tile - 0.5, py + tile - 0.5);
+          }
+          ctx.stroke();
         } else {
-          ctx.fillStyle = Theme.floorFill;
+          // 舱板：每格的底色带一点恒定抖动（同一下标永远是同一个值），
+          // 再叠"左上受光 / 右下积影"的斜面，地面才像一块块压在一起的金属板。
+          const jitter = hash01(x * 73 + y * 151);
           ctx.globalAlpha = Math.min(1, alpha * 0.95);
+          ctx.fillStyle = `rgb(${Math.round(30 + jitter * 16)}, ${Math.round(54 + jitter * 18)}, ${Math.round(64 + jitter * 20)})`;
           ctx.fillRect(px, py, tile, tile);
 
           // 明亮显现时补一层青色辉光（声波扫过的"余温"，强度恢复）
@@ -329,17 +487,43 @@ export class CanvasRenderer {
             ctx.fillRect(px, py, tile, tile);
           }
 
+          // 斜面：上沿一条冷光、下沿与右沿一道积影，像微凸的舱板
+          if (tile >= 12) {
+            const lip = Math.max(1, tile * 0.08);
+            ctx.globalAlpha = Math.min(1, alpha * 0.55);
+            ctx.fillStyle = 'rgba(214, 243, 250, 0.22)';
+            ctx.fillRect(px + 1, py + 1, tile - 2, lip);
+            ctx.fillStyle = 'rgba(0, 8, 12, 0.4)';
+            ctx.fillRect(px + 1, py + tile - lip - 1, tile - 2, lip);
+            ctx.fillRect(px + tile - lip - 1, py + 1, lip, tile - 2);
+          }
+
           // 格子内部再画一个小一号的方框，形成"砖缝"般的细网格。
           // 只在格子够大时画，否则 tile=8 的情况下会糊成一片。
           if (tile >= 14) {
-            const inset = Math.max(2, tile * 0.14);
-            ctx.globalAlpha = Math.min(1, alpha * (0.5 + flash * 0.5));
+            const inset = Math.max(2, tile * 0.17);
+            ctx.globalAlpha = Math.min(1, alpha * (0.45 + flash * 0.5));
             ctx.strokeStyle = Theme.floorGrid;
             ctx.lineWidth = 1;
             ctx.strokeRect(px + inset, py + inset, tile - inset * 2, tile - inset * 2);
           }
 
-          ctx.globalAlpha = Math.min(1, alpha * (0.32 + flash * 0.6));
+          // 四角铆钉：格子够大时才画，小图上会退化成噪点
+          if (tile >= 22) {
+            const rivet = Math.max(1, tile * 0.028);
+            const pad = Math.max(3, tile * 0.13);
+            ctx.globalAlpha = Math.min(1, alpha * 0.5);
+            ctx.fillStyle = 'rgba(206, 238, 246, 0.5)';
+            for (let k = 0; k < 4; k += 1) {
+              const sx = k < 2 ? 1 : -1;
+              const sy = k % 2 === 0 ? 1 : -1;
+              ctx.beginPath();
+              ctx.arc(px + tile / 2 + sx * (tile / 2 - pad), py + tile / 2 + sy * (tile / 2 - pad), rivet, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+
+          ctx.globalAlpha = Math.min(1, alpha * (0.3 + flash * 0.6));
           ctx.strokeStyle = Theme.floorStroke;
           ctx.lineWidth = 1;
           ctx.strokeRect(px + 0.5, py + 0.5, tile - 1, tile - 1);
@@ -428,7 +612,7 @@ export class CanvasRenderer {
     }
   }
 
-  /** 尖刺：一个朝上的三角锯齿 */
+  /** 尖刺：优先用金属徽记；小格子回退成朝上的三角锯齿 */
   private drawSpikeGlyph(
     px: number,
     py: number,
@@ -442,6 +626,8 @@ export class CanvasRenderer {
     const r = tile * 0.3;
     // 轻微脉动，让危险格在记忆层也能被一眼扫到
     const pulse = 1 + Math.sin(now * 3.2) * 0.06;
+
+    if (this.drawGlyph('spike', cx, cy, tile, 0.66, `brightness(${1 + flash * 0.35})`)) return;
 
     ctx.strokeStyle = Theme.hazardSpike;
     ctx.lineWidth = Math.max(1.5, tile * 0.075);
@@ -459,7 +645,7 @@ export class CanvasRenderer {
     ctx.stroke();
   }
 
-  /** 回声干扰器：一圈扩散的波纹 + 中心点 */
+  /** 回声干扰器：扩散波纹保留（那是"让周围遗忘"的动效），中心换成紫铜徽记 */
   private drawJammerGlyph(
     px: number,
     py: number,
@@ -478,11 +664,13 @@ export class CanvasRenderer {
     for (let ring = 0; ring < 2; ring += 1) {
       const phase = (now * 0.8 + ring * 0.5) % 1;
       const radius = base + phase * tile * 0.26;
-      ctx.globalAlpha *= 1;
       ctx.beginPath();
       ctx.arc(cx, cy, radius, 0, Math.PI * 2);
       ctx.stroke();
     }
+
+    if (this.drawGlyph('jammer', cx, cy, tile, 0.66, `brightness(${1 + flash * 0.35})`)) return;
+
     ctx.globalAlpha = Math.min(1, (0.8 + flash * 0.2));
     ctx.fillStyle = Theme.hazardJammer;
     ctx.beginPath();
@@ -514,25 +702,36 @@ export class CanvasRenderer {
       ctx.globalAlpha = Math.min(1, alpha * 1.1);
 
       if (resonator.active) {
-        // 激活后：实心暖黄 + 呼吸光环 + 一圈外旋刻线，读起来"已锁定"
+        // 激活后：暖色光晕 + 呼吸光环 + 一圈外旋刻线，读起来"已锁定"。
+        // 中心符号换成铜金共鸣器徽记，并用 filter 把它推向暖色，和未激活态拉开。
         const pulse = 0.5 + 0.5 * Math.sin(now * 3.2);
         ctx.fillStyle = Theme.nodeGlow;
         ctx.beginPath();
         ctx.arc(cx, cy, r * (1.9 + pulse * 0.35), 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.fillStyle = Theme.nodeActive;
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, 0, Math.PI * 2);
-        ctx.fill();
+        const drewGlyph = this.drawGlyph(
+          'node',
+          cx,
+          cy,
+          tile,
+          0.72,
+          'sepia(1) saturate(2.2) brightness(1.3)'
+        );
+        if (!drewGlyph) {
+          ctx.fillStyle = Theme.nodeActive;
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, 0, Math.PI * 2);
+          ctx.fill();
 
-        // 内层高光，跟玩家球体用同一套"被上方照亮"的语言
-        ctx.globalAlpha = Math.min(1, alpha * 0.75);
-        ctx.fillStyle = '#fff0cf';
-        ctx.beginPath();
-        ctx.arc(cx - r * 0.2, cy - r * 0.22, r * 0.4, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.globalAlpha = Math.min(1, alpha * 1.1);
+          // 内层高光，跟玩家球体用同一套"被上方照亮"的语言
+          ctx.globalAlpha = Math.min(1, alpha * 0.75);
+          ctx.fillStyle = '#fff0cf';
+          ctx.beginPath();
+          ctx.arc(cx - r * 0.2, cy - r * 0.22, r * 0.4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = Math.min(1, alpha * 1.1);
+        }
 
         ctx.strokeStyle = Theme.nodeInactive;
         ctx.lineWidth = 2;
@@ -541,7 +740,7 @@ export class CanvasRenderer {
         ctx.stroke();
       } else {
         // 未激活：空心描边 + 缓慢旋转的断弧，提示"这是待激活目标"，
-        // 与出口的静止菱形在形状上彻底区分开
+        // 与出口的静止圆门在形状上彻底区分开
         ctx.strokeStyle = Theme.nodeInactive;
         ctx.lineWidth = 2;
         ctx.beginPath();
@@ -558,11 +757,22 @@ export class CanvasRenderer {
           ctx.stroke();
         }
 
-        ctx.globalAlpha = Math.min(1, alpha * 0.55);
-        ctx.fillStyle = Theme.nodeGlow;
-        ctx.beginPath();
-        ctx.arc(cx, cy, r * 0.42, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.globalAlpha = Math.min(1, alpha * 1.1);
+        const drewGlyph = this.drawGlyph(
+          'node',
+          cx,
+          cy,
+          tile,
+          0.68,
+          'grayscale(0.45) brightness(0.62)'
+        );
+        if (!drewGlyph) {
+          ctx.globalAlpha = Math.min(1, alpha * 0.55);
+          ctx.fillStyle = Theme.nodeGlow;
+          ctx.beginPath();
+          ctx.arc(cx, cy, r * 0.42, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
       ctx.restore();
     }
@@ -609,17 +819,20 @@ export class CanvasRenderer {
       ctx.arc(cx, cy, r * (1.6 + pulse * 0.2), 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.fillStyle = Theme.exitOpen;
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.fill();
+      const drewGlyph = this.drawGlyph('exit', cx, cy, tile, 0.78, 'brightness(1.25) saturate(1.15)');
+      if (!drewGlyph) {
+        ctx.fillStyle = Theme.exitOpen;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fill();
 
-      ctx.globalAlpha = Math.min(1, alpha * 0.8);
-      ctx.fillStyle = '#eafff5';
-      ctx.beginPath();
-      ctx.arc(cx - r * 0.2, cy - r * 0.22, r * 0.36, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalAlpha = Math.min(1, alpha * 1.1);
+        ctx.globalAlpha = Math.min(1, alpha * 0.8);
+        ctx.fillStyle = '#eafff5';
+        ctx.beginPath();
+        ctx.arc(cx - r * 0.2, cy - r * 0.22, r * 0.36, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = Math.min(1, alpha * 1.1);
+      }
 
       ctx.strokeStyle = Theme.exitOpen;
       ctx.lineWidth = 2;
@@ -627,28 +840,33 @@ export class CanvasRenderer {
       ctx.arc(cx, cy, r * (1.45 + pulse * 0.2), 0, Math.PI * 2);
       ctx.stroke();
     } else {
-      // 未开启：暗色菱形 + 锁扣感描边，明确表示"还不能进"
-      ctx.strokeStyle = Theme.exitClosed;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy - r);
-      ctx.lineTo(cx + r, cy);
-      ctx.lineTo(cx, cy + r);
-      ctx.lineTo(cx - r, cy);
-      ctx.closePath();
-      ctx.stroke();
+      // 未开启：暗色圆门 + 一圈"锁扣"，明确表示"还不能进"
+      const drewGlyph = this.drawGlyph('exit', cx, cy, tile, 0.78, 'grayscale(0.7) brightness(0.52)');
+      if (!drewGlyph) {
+        ctx.strokeStyle = Theme.exitClosed;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - r);
+        ctx.lineTo(cx + r, cy);
+        ctx.lineTo(cx, cy + r);
+        ctx.lineTo(cx - r, cy);
+        ctx.closePath();
+        ctx.stroke();
 
-      // 内层小菱形，让"锁"的感觉更具体
-      ctx.globalAlpha = Math.min(1, alpha * 0.5);
-      ctx.beginPath();
-      ctx.moveTo(cx, cy - r * 0.42);
-      ctx.lineTo(cx + r * 0.42, cy);
-      ctx.lineTo(cx, cy + r * 0.42);
-      ctx.lineTo(cx - r * 0.42, cy);
-      ctx.closePath();
-      ctx.stroke();
+        // 内层小菱形，让"锁"的感觉更具体
+        ctx.globalAlpha = Math.min(1, alpha * 0.5);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - r * 0.42);
+        ctx.lineTo(cx + r * 0.42, cy);
+        ctx.lineTo(cx, cy + r * 0.42);
+        ctx.lineTo(cx - r * 0.42, cy);
+        ctx.closePath();
+        ctx.stroke();
+      }
 
       ctx.globalAlpha = Math.min(1, alpha * 0.4);
+      ctx.strokeStyle = Theme.exitClosed;
+      ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(cx, cy, r * 1.55, 0, Math.PI * 2);
       ctx.stroke();
@@ -687,6 +905,21 @@ export class CanvasRenderer {
     ctx.beginPath();
     ctx.arc(cx, cy, radius * 0.94, 0, Math.PI * 2);
     ctx.stroke();
+
+    // 1.5 波壳：从波前向内衰减的径向渐变，让声波有"一层壳"而不是一条线
+    if (a > 0.02 && radius > tile) {
+      const shell = ctx.createRadialGradient(
+        cx, cy, Math.max(0, radius - tile * 1.15), cx, cy, radius
+      );
+      shell.addColorStop(0, 'rgba(111, 211, 230, 0)');
+      shell.addColorStop(0.75, `rgba(111, 211, 230, ${0.1 * a})`);
+      shell.addColorStop(1, 'rgba(200, 242, 250, 0)');
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = shell;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     // 2. 主波前：最亮的一圈，代表"正在扫描的边界"
     ctx.globalAlpha = a * 1.0;
@@ -744,25 +977,32 @@ export class CanvasRenderer {
     ctx.fill();
 
     ctx.globalAlpha = 1;
-    ctx.fillStyle = Theme.player;
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.fill();
+    // 本体优先用 AI 徽记；图片未就绪时回退到原来的球体 + 高光
+    const drewGlyph = this.drawGlyph('player', cx, cy, tile, 0.74);
+    if (!drewGlyph) {
+      ctx.fillStyle = Theme.player;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
 
-    // 高光小圆点做偏左上，让球体看起来是被光从上方照亮的
-    ctx.globalAlpha = 0.85;
-    ctx.fillStyle = Theme.playerCore;
-    ctx.beginPath();
-    ctx.arc(cx - r * 0.18, cy - r * 0.2, r * 0.42, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalAlpha = 1;
+      // 高光小圆点做偏左上，让球体看起来是被光从上方照亮的
+      ctx.globalAlpha = 0.85;
+      ctx.fillStyle = Theme.playerCore;
+      ctx.beginPath();
+      ctx.arc(cx - r * 0.18, cy - r * 0.2, r * 0.42, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
 
-    // 细描边把玩家从同色系的地板上拎出来
-    ctx.strokeStyle = 'rgba(2, 9, 14, 0.55)';
-    ctx.lineWidth = Math.max(1, tile * 0.045);
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.stroke();
+    // 细描边把玩家从同色系的地板上拎出来（仅矢量回退时用，
+    // 徽记本身已带暗部轮廓，再套一圈圆环会压住细节）
+    if (!drewGlyph) {
+      ctx.strokeStyle = 'rgba(2, 9, 14, 0.55)';
+      ctx.lineWidth = Math.max(1, tile * 0.045);
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+    }
 
     // 无敌帧：玩家本体闪烁 + 一圈红环，明确告诉玩家"这段时间不会再掉血"
     if (session.invulnerableTimer > 0) {

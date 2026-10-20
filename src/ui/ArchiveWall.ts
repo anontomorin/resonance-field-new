@@ -48,16 +48,16 @@ export class ArchiveWall {
       const item = document.createElement('article');
       item.className = `archive-card${cleared ? ' archived' : ''}`;
 
-      const badge = document.createElement('div');
-      badge.className = 'archive-badge';
+      const head = document.createElement('div');
+      head.className = 'archive-head-row';
       const index = document.createElement('span');
       index.className = 'archive-index';
       index.textContent = `ARCHIVE 0${id}`;
       const org = document.createElement('span');
       org.className = 'archive-org';
       org.textContent = card.sourceName;
-      badge.appendChild(index);
-      badge.appendChild(org);
+      head.appendChild(index);
+      head.appendChild(org);
 
       const title = document.createElement('h3');
       title.className = 'archive-title';
@@ -81,7 +81,7 @@ export class ArchiveWall {
       foot.appendChild(status);
       foot.appendChild(link);
 
-      item.appendChild(badge);
+      item.appendChild(head);
       item.appendChild(title);
       item.appendChild(body);
       item.appendChild(foot);

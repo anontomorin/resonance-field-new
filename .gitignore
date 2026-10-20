@@ -11,3 +11,7 @@ vite.config.ts.timestamp-*.mjs
 
 # AI 助手的工作笔记（保留在本地，不随仓库分发）
 .workbuddy/
+.trae/
+
+# 参赛提交材料（截图与打包物，体积大，单独交付）
+submission/

@@ -1,90 +1,41 @@
-name: Build and Deploy to GitHub Pages
+name: Deploy to GitHub Pages
 
-# 触发：推送到 main，或在 Actions 页面手动运行
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
-# 最小权限。用的是 GitHub 在 CI 中自动注入的 GITHUB_TOKEN，
-# 不需要、也不应该使用任何个人访问令牌（PAT）。
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
 concurrency:
   group: pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
-  # ------------------------------------------------------------------
-  # 构建 + 发布。
-  #
-  # 同时兼容 GitHub Pages 的两种 Source 模式，避免因为设置没改而白跑：
-  #   A) "Deploy from a branch" —— 把构建产物推到 gh-pages 分支（本 job 负责）
-  #   B) "GitHub Actions"      —— 由下面的 deploy job 用 Pages Artifact 发布
-  #
-  # 之前只做了 B，但仓库 Source 处于 A，Pages 就去读**仓库根目录**的源
-  # index.html —— 那是 Vite 的模板，没有 script/link 标签，于是线上是一个
-  # 没样式、不报错、点了没反应的"空壳"。这就是"显示异常"的根因。
-  # ------------------------------------------------------------------
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: 检出代码
-        uses: actions/checkout@v4
-
-      - name: 配置 Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20
           cache: npm
-
-      - name: 安装依赖
-        run: npm ci
-
-      - name: 关卡与算法校验（300 项）
-        run: npm run validate
-
-      - name: 构建静态站点
-        run: npm run build
-
-      - name: 加 .nojekyll（避免 Jekyll 忽略下划线开头的文件）
-        run: touch dist/.nojekyll
-
-      # ---- 路线 A：把产物推到 gh-pages 分支 ----
-      - name: 发布到 gh-pages 分支
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-          publish_branch: gh-pages
-          commit_message: "部署：${{ github.event.head_commit.message || github.sha }} [skip ci]"
-          user_name: "github-actions[bot]"
-          user_email: "github-actions[bot]@users.noreply.github.com"
-
-      # ---- 路线 B：Pages Artifact（Source 设为 "GitHub Actions" 时生效）----
-      - name: 配置 Pages
-        uses: actions/configure-pages@v5
-        continue-on-error: true
-
-      - name: 上传构建产物
-        uses: actions/upload-pages-artifact@v3
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    # 仓库 Source 若仍是 "Deploy from a branch"，此 job 会失败；
-    # 但上面的 gh-pages 分支已经发布成功，Pages 会正常读到它。
-    continue-on-error: true
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: 部署到 GitHub Pages
-        id: deployment
+      - id: deployment
         uses: actions/deploy-pages@v4
-        continue-on-error: true

@@ -22,12 +22,14 @@ interface KnowledgeCardElements {
 function paintKnowledgeCard(els: KnowledgeCardElements, card?: OceanKnowledgeCard): void {
   if (!card) {
     els.root.classList.add('hidden');
+    els.root.removeAttribute('data-card');
     els.title.textContent = '';
     els.body.textContent = '';
     els.source.textContent = '';
     els.link.removeAttribute('href');
     return;
   }
+  els.root.dataset.card = card.id;
   els.title.textContent = card.title;
   els.body.textContent = card.body;
   els.source.textContent = `来源：${card.sourceName} · ${card.sourceTitle}`;
