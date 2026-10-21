@@ -282,17 +282,15 @@ export class CanvasRenderer {
 
     // 扫描板：不是一块平涂的暗色，而是一块微微受光的仪器底板——
     // 中心亮一点、四边压下去，地图才像"嵌在舱板里"而不是浮在空处。
-    const plate = ctx.createLinearGradient(ox, oy, ox, oy + h);
-    plate.addColorStop(0, 'rgba(22, 50, 65, 0.52)');
-    plate.addColorStop(0.55, 'rgba(11, 29, 40, 0.46)');
-    plate.addColorStop(1, 'rgba(5, 15, 22, 0.56)');
+    const feather = Math.min(64, h * 0.16);
+    const plate = ctx.createLinearGradient(0, oy, 0, oy + h);
+    plate.addColorStop(0, 'rgba(20, 46, 60, 0)');
+    plate.addColorStop(feather / h, 'rgba(20, 46, 60, 0.54)');
+    plate.addColorStop(0.55, 'rgba(11, 29, 40, 0.5)');
+    plate.addColorStop(1 - feather / h, 'rgba(5, 15, 22, 0.56)');
+    plate.addColorStop(1, 'rgba(5, 15, 22, 0)');
     ctx.fillStyle = plate;
     ctx.fillRect(ox, oy, w, h);
-
-    ctx.fillStyle = Theme.unknownBase;
-    ctx.globalAlpha = 0.5;
-    ctx.fillRect(ox, oy, w, h);
-    ctx.globalAlpha = 1;
 
     // 均匀纹理点阵：间距跟着格子走，让未知区也能读出"这是一张网"，
     // 但点太密会像噪点，所以固定压到很低的透明度。
