@@ -8,18 +8,18 @@
  * 由 Vite 在构建时重写。两边指向的是同一批文件。
  */
 
-import glyphNode from './art/glyph-node.png';
-import glyphExit from './art/glyph-exit.png';
-import glyphSpike from './art/glyph-spike.png';
-import glyphJammer from './art/glyph-jammer.png';
-import glyphPlayer from './art/glyph-player.png';
-import kcSoundscape from './art/kc-01-soundscape.jpg';
-import kcMarineLife from './art/kc-02-marine-life.jpg';
-import kcRecorder from './art/kc-03-recorder.jpg';
-import kcNoise from './art/kc-04-noise.jpg';
-import kcShipping from './art/kc-05-shipping.jpg';
+import glyphNode from './art/glyph-node.webp';
+import glyphExit from './art/glyph-exit.webp';
+import glyphSpike from './art/glyph-spike.webp';
+import glyphJammer from './art/glyph-jammer.webp';
+import glyphPlayer from './art/glyph-player.webp';
+import kcSoundscape from './art/kc-01-soundscape.webp';
+import kcMarineLife from './art/kc-02-marine-life.webp';
+import kcRecorder from './art/kc-03-recorder.webp';
+import kcNoise from './art/kc-04-noise.webp';
+import kcShipping from './art/kc-05-shipping.webp';
 
-/** 画布上的五枚金属徽记（256×256，透明底） */
+/** 画布上的五枚金属徽记（128×128，透明底 WebP） */
 export const GLYPHS = {
   node: glyphNode,
   exit: glyphExit,

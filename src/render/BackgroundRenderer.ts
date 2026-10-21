@@ -1,5 +1,5 @@
 import { Theme } from './Theme';
-import trenchArt from '../assets/art/bg-trench.jpg';
+import trenchArt from '../assets/art/bg-trench.webp';
 
 /**
  * 游戏画布的**风景背景层**。

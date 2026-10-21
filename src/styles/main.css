@@ -17,8 +17,8 @@
         HUD 仪表舱 hud-pod / hud-nameplate / hud-button / hud-strip
         表盘 gauge-dial · 生命灯 lamp-heart
         摇杆 pad-base / pad-knob · 声波键 pulse-btn
-        模式封面 mode-*.jpg
-        画布徽记 glyph-*.png
+        模式封面 mode-*.webp
+        画布徽记 glyph-*.webp
    3. 颜色只有三档：海沟 --hull-900 / 玻璃 --glass / 读数 --ink。
       语义色纪律：青=正在发生的能量，琥珀=强调，薄荷=通过，
       危险色只给尖刺与干扰器。语义色不拿来当装饰。
@@ -200,7 +200,7 @@ body {
     radial-gradient(120% 80% at 78% -10%, rgba(240, 178, 92, 0.13), transparent 62%),
     radial-gradient(90% 70% at 12% 8%, rgba(111, 211, 230, 0.09), transparent 58%),
     linear-gradient(180deg, rgba(4, 9, 13, 0.3) 0%, rgba(2, 6, 9, 0.72) 62%, #02060a 100%),
-    url('../assets/art/bg-deck.jpg') center 48% / cover no-repeat,
+    url('../assets/art/bg-deck.webp') center 48% / cover no-repeat,
     #02060a;
   animation: vista-pan 46s ease-in-out infinite alternate;
 }
@@ -210,7 +210,7 @@ body {
   content: '';
   position: fixed;
   inset: 0;
-  background: url('../assets/art/tex-hull.jpg') center / 900px repeat;
+  background: url('../assets/art/tex-hull.webp') center / 900px repeat;
   opacity: 0.12;
   mix-blend-mode: overlay;
   pointer-events: none;
@@ -256,7 +256,7 @@ body {
   position: absolute;
   inset: -28px;
   border: 28px solid transparent;
-  border-image: url('../assets/art/frame-panel.png') 150 stretch;
+  border-image: url('../assets/art/frame-panel.webp') 150 stretch;
   pointer-events: none;
   z-index: 2;
 }
@@ -369,7 +369,7 @@ body {
   white-space: nowrap;
   background:
     linear-gradient(180deg, rgba(185, 240, 248, 0.07), rgba(0, 0, 0, 0.24)),
-    url('../assets/art/plate-bar.jpg') center / 100% 100% no-repeat,
+    url('../assets/art/plate-bar.webp') center / 100% 100% no-repeat,
     var(--hull-700);
   border: 1px solid var(--seam-strong);
   border-radius: var(--r-sm);
@@ -406,7 +406,7 @@ body {
   border-color: rgba(150, 232, 246, 0.72);
   background:
     linear-gradient(180deg, rgba(111, 211, 230, 0.42), rgba(111, 211, 230, 0.08) 46%, rgba(0, 0, 0, 0.5)),
-    url('../assets/art/plate-bar.jpg') center / 100% 100% no-repeat,
+    url('../assets/art/plate-bar.webp') center / 100% 100% no-repeat,
     #0a2027;
   font-weight: 600;
   text-shadow: 0 0 14px rgba(111, 211, 230, 0.55);
@@ -438,7 +438,7 @@ body {
 .btn.ghost {
   background:
     linear-gradient(180deg, rgba(4, 10, 15, 0.58), rgba(4, 10, 15, 0.72)),
-    url('../assets/art/plate-bar.jpg') center / 100% 100% no-repeat,
+    url('../assets/art/plate-bar.webp') center / 100% 100% no-repeat,
     rgba(8, 19, 27, 0.6);
   border-color: var(--seam);
   color: var(--ink-dim);
@@ -582,7 +582,7 @@ body {
   font-size: var(--fs-sm);
   letter-spacing: 0.08em;
   color: var(--ink-dim);
-  background: url('../assets/art/plate-bar.jpg') center / 100% 100% no-repeat, rgba(8, 19, 27, 0.5);
+  background: url('../assets/art/plate-bar.webp') center / 100% 100% no-repeat, rgba(8, 19, 27, 0.5);
   border: 1px solid transparent;
   border-radius: var(--r-sm);
   cursor: pointer;
@@ -613,7 +613,7 @@ body {
   font-size: var(--fs-xs);
   letter-spacing: 0.08em;
   color: var(--ink-dim);
-  background: url('../assets/art/plate-bar.jpg') center / 100% 100% no-repeat, rgba(8, 19, 27, 0.6);
+  background: url('../assets/art/plate-bar.webp') center / 100% 100% no-repeat, rgba(8, 19, 27, 0.6);
   border: 1px solid var(--seam);
   border-radius: 999px;
   cursor: pointer;
@@ -638,7 +638,7 @@ body {
   font-size: var(--fs-xs);
   letter-spacing: 0.06em;
   color: var(--ink-dim);
-  background: url('../assets/art/plate-bar.jpg') center / 100% 100% no-repeat, rgba(8, 19, 27, 0.6);
+  background: url('../assets/art/plate-bar.webp') center / 100% 100% no-repeat, rgba(8, 19, 27, 0.6);
   border: 1px solid var(--seam);
   border-radius: var(--r-sm);
   cursor: pointer;
@@ -709,7 +709,7 @@ body {
   padding: 12px 46px 12px 30px;
   background:
     linear-gradient(90deg, rgba(4, 11, 16, 0.1) 0%, rgba(4, 11, 16, 0.34) 62%, rgba(4, 11, 16, 0.1) 100%),
-    url('../assets/art/hud-nameplate.jpg') center / 100% 100% no-repeat;
+    url('../assets/art/hud-nameplate.webp') center / 100% 100% no-repeat;
   border-radius: 3px;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
   animation: plate-breathe 6s ease-in-out infinite;
@@ -816,7 +816,7 @@ body {
   padding: 7px 16px 6px 26px;
   background:
     radial-gradient(70% 90% at 50% 50%, rgba(4, 12, 18, 0.2), rgba(3, 9, 13, 0.62)),
-    url('../assets/art/hud-pod.jpg') center / 100% 100% no-repeat;
+    url('../assets/art/hud-pod.webp') center / 100% 100% no-repeat;
   border-radius: 4px;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
 }
@@ -884,7 +884,7 @@ body {
   padding: 9px 18px;
   background:
     linear-gradient(180deg, rgba(185, 240, 248, 0.06), rgba(0, 0, 0, 0.2)),
-    url('../assets/art/hud-button.jpg') center / 100% 100% no-repeat;
+    url('../assets/art/hud-button.webp') center / 100% 100% no-repeat;
   border-color: rgba(140, 184, 202, 0.22);
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45);
 }
@@ -907,7 +907,7 @@ body {
   display: inline-block;
   width: 9px;
   height: 20px;
-  background: url('../assets/art/lamp-heart.jpg') center / 9px 20px no-repeat;
+  background: url('../assets/art/lamp-heart.webp') center / 9px 20px no-repeat;
   filter: saturate(1.1) brightness(1.05);
   transition: filter 0.2s var(--ease), opacity 0.2s var(--ease);
 }
@@ -945,7 +945,7 @@ body {
   color: var(--cyan-bright);
   background:
     linear-gradient(180deg, rgba(3, 9, 13, 0.62), rgba(3, 9, 13, 0.86)),
-    url('../assets/art/hud-strip.jpg') center / 100% 100% no-repeat;
+    url('../assets/art/hud-strip.webp') center / 100% 100% no-repeat;
   border-left: 2px solid rgba(111, 211, 230, 0.6);
   border-right: 2px solid rgba(111, 211, 230, 0.6);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 24px rgba(111, 211, 230, 0.1);
@@ -972,7 +972,7 @@ body {
   color: var(--ink-dim);
   background:
     linear-gradient(180deg, rgba(3, 9, 13, 0.5), rgba(3, 9, 13, 0.78)),
-    url('../assets/art/hud-strip.jpg') center / 100% 100% no-repeat;
+    url('../assets/art/hud-strip.webp') center / 100% 100% no-repeat;
   box-shadow: 0 10px 26px rgba(0, 0, 0, 0.5);
 }
 
@@ -1014,7 +1014,7 @@ body.pad-connected:not(.touch-enabled) .padhint {
   padding: 9px 58px 9px 18px;
   background:
     linear-gradient(180deg, rgba(3, 9, 13, 0.5), rgba(3, 9, 13, 0.8)),
-    url('../assets/art/hud-strip.jpg') center / 100% 100% no-repeat;
+    url('../assets/art/hud-strip.webp') center / 100% 100% no-repeat;
   box-shadow: 0 10px 26px rgba(0, 0, 0, 0.5);
 }
 
@@ -1026,7 +1026,7 @@ body.pad-connected:not(.touch-enabled) .padhint {
   width: 40px;
   height: 40px;
   margin-top: -20px;
-  background: url('../assets/art/gauge-dial.jpg') center / cover no-repeat;
+  background: url('../assets/art/gauge-dial.webp') center / cover no-repeat;
   border-radius: 50%;
   animation: dial-spin 14s linear infinite;
   opacity: 0.9;
@@ -1096,7 +1096,7 @@ body.pad-connected:not(.touch-enabled) .padhint {
   color: var(--ink);
   background:
     linear-gradient(180deg, rgba(3, 9, 13, 0.66), rgba(3, 9, 13, 0.9)),
-    url('../assets/art/hud-strip.jpg') center / 100% 100% no-repeat;
+    url('../assets/art/hud-strip.webp') center / 100% 100% no-repeat;
   box-shadow: var(--shadow-md), 0 0 28px rgba(111, 211, 230, 0.12);
   opacity: 0;
   pointer-events: none;
@@ -1132,7 +1132,7 @@ body.touch-enabled .touch-controls {
   width: 146px;
   height: 146px;
   border-radius: 50%;
-  background: url('../assets/art/pad-base.jpg') center / cover no-repeat;
+  background: url('../assets/art/pad-base.webp') center / cover no-repeat;
   box-shadow: 0 16px 34px rgba(0, 0, 0, 0.6), 0 0 30px rgba(111, 211, 230, 0.08);
   pointer-events: auto;
   touch-action: none;
@@ -1168,7 +1168,7 @@ body.touch-enabled .touch-controls {
   height: 58px;
   margin: -29px 0 0 -29px;
   border-radius: 50%;
-  background: url('../assets/art/pad-knob.jpg') center / cover no-repeat;
+  background: url('../assets/art/pad-knob.webp') center / cover no-repeat;
   box-shadow: 0 10px 22px rgba(0, 0, 0, 0.72), 0 0 18px rgba(111, 211, 230, 0.22);
   pointer-events: none;
 }
@@ -1200,7 +1200,7 @@ body.touch-enabled .touch-controls {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: url('../assets/art/gauge-dial.jpg') center / cover no-repeat;
+  background: url('../assets/art/gauge-dial.webp') center / cover no-repeat;
   opacity: 0.55;
   animation: dial-spin 10s linear infinite;
   pointer-events: none;
@@ -1219,7 +1219,7 @@ body.touch-enabled .touch-controls {
   letter-spacing: 0.16em;
   color: var(--cyan-bright);
   text-shadow: 0 0 12px rgba(111, 211, 230, 0.8);
-  background: url('../assets/art/pulse-btn.jpg') center / cover no-repeat;
+  background: url('../assets/art/pulse-btn.webp') center / cover no-repeat;
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.6), 0 0 26px rgba(111, 211, 230, 0.2);
   touch-action: none;
 }
@@ -1371,7 +1371,7 @@ body.touch-enabled .touch-controls {
   padding: 12px 14px;
   background:
     linear-gradient(180deg, rgba(185, 240, 248, 0.04), rgba(0, 0, 0, 0.24)),
-    url('../assets/art/plate-flat.jpg') center / 100% 100% no-repeat,
+    url('../assets/art/plate-flat.webp') center / 100% 100% no-repeat,
     rgba(8, 19, 27, 0.72);
   border: 1px solid var(--seam);
   box-shadow: var(--shadow-sm);
@@ -1468,7 +1468,7 @@ body.touch-enabled .touch-controls {
   width: 100%;
   max-width: 400px;
   aspect-ratio: 1;
-  background: url('../assets/art/frame-scope.png') center / contain no-repeat;
+  background: url('../assets/art/frame-scope.webp') center / contain no-repeat;
   filter: drop-shadow(0 24px 48px rgba(0, 0, 0, 0.72));
 }
 
@@ -1479,7 +1479,7 @@ body.touch-enabled .touch-controls {
   overflow: hidden;
   background:
     radial-gradient(circle at 50% 50%, rgba(111, 211, 230, 0.14), rgba(3, 10, 14, 0.9) 62%),
-    url('../assets/art/tex-glass.jpg') center / cover,
+    url('../assets/art/tex-glass.webp') center / cover,
     #030a0e;
   box-shadow:
     inset 0 0 40px rgba(0, 0, 0, 0.9),
@@ -1626,7 +1626,7 @@ body.touch-enabled .touch-controls {
   color: var(--ink);
   background:
     linear-gradient(180deg, rgba(4, 10, 15, 0.32), rgba(3, 8, 12, 0.92)),
-    url('../assets/art/plate-flat.jpg') center / 100% 100% no-repeat,
+    url('../assets/art/plate-flat.webp') center / 100% 100% no-repeat,
     var(--hull-800);
   border: 1px solid var(--seam);
   border-radius: var(--r-sm);
@@ -1652,15 +1652,15 @@ body.touch-enabled .touch-controls {
 }
 
 #mode-campaign .mode-cover {
-  background-image: url('../assets/art/mode-campaign.jpg');
+  background-image: url('../assets/art/mode-campaign.webp');
 }
 
 #mode-random .mode-cover {
-  background-image: url('../assets/art/mode-random.jpg');
+  background-image: url('../assets/art/mode-random.webp');
 }
 
 #mode-custom .mode-cover {
-  background-image: url('../assets/art/mode-custom.jpg');
+  background-image: url('../assets/art/mode-custom.webp');
 }
 
 .mode-card:hover {
@@ -1779,7 +1779,7 @@ body.touch-enabled .touch-controls {
   padding: 16px 16px 14px;
   background:
     linear-gradient(180deg, rgba(185, 240, 248, 0.03), rgba(0, 0, 0, 0.3)),
-    url('../assets/art/plate-flat.jpg') center / 100% 100% no-repeat,
+    url('../assets/art/plate-flat.webp') center / 100% 100% no-repeat,
     rgba(8, 19, 27, 0.8);
   border: 1px solid var(--seam);
   border-radius: var(--r-sm);
@@ -2009,7 +2009,7 @@ body.touch-enabled .touch-controls {
   color: var(--ink);
   background:
     linear-gradient(180deg, rgba(185, 240, 248, 0.035), rgba(0, 0, 0, 0.36)),
-    url('../assets/art/plate-flat.jpg') center / 100% 100% no-repeat,
+    url('../assets/art/plate-flat.webp') center / 100% 100% no-repeat,
     rgba(8, 19, 27, 0.82);
   border: 1px solid var(--seam);
   border-radius: var(--r-sm);
@@ -2157,7 +2157,7 @@ body.touch-enabled .touch-controls {
   padding: 12px 16px;
   background:
     linear-gradient(180deg, rgba(185, 240, 248, 0.03), rgba(0, 0, 0, 0.3)),
-    url('../assets/art/plate-flat.jpg') center / 100% 100% no-repeat,
+    url('../assets/art/plate-flat.webp') center / 100% 100% no-repeat,
     rgba(8, 19, 27, 0.8);
   border: 1px solid var(--seam);
   border-radius: var(--r-sm);
@@ -2249,7 +2249,7 @@ body.touch-enabled .touch-controls {
   font-size: var(--fs-xxs);
   letter-spacing: 0.06em;
   color: var(--ink-dim);
-  background: url('../assets/art/plate-bar.jpg') center / 100% 100% no-repeat, rgba(8, 19, 27, 0.6);
+  background: url('../assets/art/plate-bar.webp') center / 100% 100% no-repeat, rgba(8, 19, 27, 0.6);
   border: 1px solid var(--seam);
   border-radius: var(--r-sm);
   cursor: pointer;
@@ -2373,7 +2373,7 @@ body.touch-enabled .touch-controls {
   background:
     radial-gradient(circle at 50% 40%, rgba(111, 211, 230, 0.05), transparent 62%),
     linear-gradient(180deg, rgba(4, 11, 16, 0.9), rgba(2, 6, 9, 0.96)),
-    url('../assets/art/tex-glass.jpg') center / 700px repeat,
+    url('../assets/art/tex-glass.webp') center / 700px repeat,
     rgba(2, 6, 9, 0.9);
   border: 1px solid var(--seam);
   box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.8);
@@ -2551,23 +2551,23 @@ body.touch-enabled .touch-controls {
 }
 
 .knowledge-card[data-card='ocean-soundscape'] .kc-art {
-  background-image: url('../assets/art/kc-01-soundscape.jpg');
+  background-image: url('../assets/art/kc-01-soundscape.webp');
 }
 
 .knowledge-card[data-card='sound-for-marine-life'] .kc-art {
-  background-image: url('../assets/art/kc-02-marine-life.jpg');
+  background-image: url('../assets/art/kc-02-marine-life.webp');
 }
 
 .knowledge-card[data-card='how-scientists-record'] .kc-art {
-  background-image: url('../assets/art/kc-03-recorder.jpg');
+  background-image: url('../assets/art/kc-03-recorder.webp');
 }
 
 .knowledge-card[data-card='noise-is-multi-dimensional'] .kc-art {
-  background-image: url('../assets/art/kc-04-noise.jpg');
+  background-image: url('../assets/art/kc-04-noise.webp');
 }
 
 .knowledge-card[data-card='ships-as-noise-source'] .kc-art {
-  background-image: url('../assets/art/kc-05-shipping.jpg');
+  background-image: url('../assets/art/kc-05-shipping.webp');
 }
 
 .kc-inner {
